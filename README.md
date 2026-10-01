@@ -123,7 +123,7 @@ Cascading: ON DELETE CASCADE from users.id → tickets.created_by_id
 ```bash
 cd backend
 npm install                     # installs @prisma/client, prisma; mongoose is gone
-npm install prisma @prisma/client   # already included above, shown per your request
+npm install prisma @prisma/client   # already included above
 ```
 
 ### `.env`
