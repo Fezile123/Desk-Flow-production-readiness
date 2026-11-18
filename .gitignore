@@ -17,4 +17,5 @@ build/
 
 # OS files
 .DS_Store
-Thumbs.db
+Thumbs.dbbackend/coverage/
+backend/coverage/

@@ -12,7 +12,9 @@
     "prisma:deploy": "prisma migrate deploy",
     "prisma:studio": "prisma studio",
     "seed": "node prisma/seed.js",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate",
+    "test": "jest",
+    "test:coverage": "jest --coverage"
   },
   "dependencies": {
     "@prisma/client": "^6.10.1",
@@ -30,8 +32,10 @@
     "xss-clean": "^0.1.4"
   },
   "devDependencies": {
+    "jest": "^30.5.2",
     "nodemon": "^3.1.4",
-    "prisma": "^6.12.0"
+    "prisma": "^6.12.0",
+    "supertest": "^7.3.2"
   },
   "prisma": {
     "seed": "node prisma/seed.js"
