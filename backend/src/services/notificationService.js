@@ -1,31 +1,16 @@
-// backend/src/notificationService.js
-// Central service to create notifications. Import and call these
-// from your existing ticket routes whenever a ticket event occurs.
-
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
+const { prisma } = require('../config/prisma');
 
 // SSE clients map: userId -> res (response stream)
 const sseClients = new Map();
 
-/**
- * Register an SSE client connection for a user.
- * Called from the /api/notifications/stream route.
- */
 function addSSEClient(userId, res) {
   sseClients.set(userId, res);
 }
 
-/**
- * Remove an SSE client (on disconnect).
- */
 function removeSSEClient(userId) {
   sseClients.delete(userId);
 }
 
-/**
- * Push a real-time event to a specific user if they are connected.
- */
 function pushToUser(userId, data) {
   const client = sseClients.get(userId);
   if (client) {
@@ -33,14 +18,10 @@ function pushToUser(userId, data) {
   }
 }
 
-/**
- * Push a real-time event to ALL connected admin users.
- * You must pass in the list of admin userIds.
- */
 async function pushToAdmins(data) {
   try {
     const admins = await prisma.user.findMany({
-      where: { role: { in: ['admin'] } },
+      where: { role: 'admin' },
       select: { id: true },
     });
     admins.forEach(({ id }) => pushToUser(id, data));
@@ -49,22 +30,11 @@ async function pushToAdmins(data) {
   }
 }
 
-/**
- * Create a notification in the database and push it live via SSE.
- *
- * @param {object} opts
- * @param {string}   opts.userId    - recipient user ID
- * @param {string}   opts.type      - notification type string
- * @param {string}   opts.title     - short title
- * @param {string}   opts.message   - detail message
- * @param {string}  [opts.ticketId] - optional related ticket ID
- */
 async function createNotification({ userId, type, title, message, ticketId }) {
   try {
     const notification = await prisma.notification.create({
       data: { userId, type, title, message, ticketId: ticketId || null },
     });
-    // Push live
     pushToUser(userId, { type: 'NEW_NOTIFICATION', notification });
     return notification;
   } catch (e) {
@@ -72,13 +42,10 @@ async function createNotification({ userId, type, title, message, ticketId }) {
   }
 }
 
-// ─── Convenience helpers ───────────────────────────────────────
-
-/** Notify all admins when a new ticket is created by an employee */
 async function notifyAdminsNewTicket(ticket, submitterName) {
   try {
     const admins = await prisma.user.findMany({
-      where: { role: { in: ['admin'] } },
+      where: { role: 'admin' },
       select: { id: true },
     });
     for (const admin of admins) {
@@ -95,13 +62,12 @@ async function notifyAdminsNewTicket(ticket, submitterName) {
   }
 }
 
-/** Notify the ticket owner when their ticket status changes */
 async function notifyUserTicketUpdated(ticket, newStatus, updatedByName) {
   const statusLabels = {
-    OPEN: 'Open',
-    IN_PROGRESS: 'In Progress',
-    RESOLVED: 'Resolved',
-    CLOSED: 'Closed',
+    Open: 'Open',
+    'In Progress': 'In Progress',
+    Resolved: 'Resolved',
+    Closed: 'Closed',
   };
   await createNotification({
     userId: ticket.createdById,
@@ -112,7 +78,6 @@ async function notifyUserTicketUpdated(ticket, newStatus, updatedByName) {
   });
 }
 
-/** Notify the ticket owner when their ticket is resolved */
 async function notifyUserTicketResolved(ticket, resolvedByName) {
   await createNotification({
     userId: ticket.createdById,
@@ -123,9 +88,8 @@ async function notifyUserTicketResolved(ticket, resolvedByName) {
   });
 }
 
-/** Notify a user when a comment is added to their ticket */
 async function notifyUserNewComment(ticket, commenterName) {
-  if (ticket.createdById === ticket.commenterId) return; // don't notify yourself
+  if (ticket.createdById === ticket.commenterId) return;
   await createNotification({
     userId: ticket.createdById,
     type: 'new_comment',

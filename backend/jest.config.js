@@ -9,6 +9,12 @@ module.exports = {
   coverageDirectory: 'coverage',
   coverageReporters: ['text', 'html'],
   coverageThreshold: {
+    global: {
+      statements: 70,
+      lines: 70,
+      functions: 70,
+      branches: 60,
+    },
     './src/services/ticketService.js': {
       statements: 90,
       branches: 80,
